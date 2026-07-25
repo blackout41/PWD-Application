@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Construction Cost Calculator</title>
 <style>
   :root{
@@ -17,18 +19,24 @@
     --grid:#dcd7c9;
     --mono: 'JetBrains Mono','Courier New',monospace;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
   body{
     margin:0;
     background:var(--paper);
     color:var(--ink);
-    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     line-height:1.4;
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior-y:contain;
   }
   header{
     background:var(--blue-deep);
     color:#eef2f4;
     padding:22px 28px;
+    padding-top:calc(22px + env(safe-area-inset-top));
+    padding-left:calc(28px + env(safe-area-inset-left));
+    padding-right:calc(28px + env(safe-area-inset-right));
     border-bottom:4px solid var(--amber);
   }
   header h1{
@@ -45,6 +53,25 @@
     max-width:1100px;
     margin:0 auto;
     padding:24px 20px 60px;
+    padding-left:calc(20px + env(safe-area-inset-left));
+    padding-right:calc(20px + env(safe-area-inset-right));
+  }
+
+  @media (max-width:640px){
+    header{padding:16px 18px;padding-top:calc(16px + env(safe-area-inset-top));}
+    header h1{font-size:1.2rem;}
+    header p{font-size:0.78rem;}
+    .wrap{padding:16px 14px 40px;padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right));}
+    .grid{grid-template-columns:1fr 1fr;gap:12px 12px;}
+    .section-title{margin:22px 0 12px;font-size:0.72rem;}
+    .hero{flex-direction:column;align-items:flex-start;padding:20px 18px;}
+    .hero .sub{text-align:left;}
+    .hero .big{font-size:1.7rem;}
+    table{font-size:0.8rem;}
+    th, td{padding:7px 8px;}
+  }
+  @media (max-width:400px){
+    .grid{grid-template-columns:1fr;}
   }
   .section-title{
     font-size:0.78rem;
@@ -74,16 +101,26 @@
     font-size:0.7rem;
     color:#8b8375;
   }
-  input[type=number], select{
+  input[type=number], input[type=text], select{
     font-family:var(--mono);
-    font-size:0.95rem;
-    padding:8px 9px;
+    font-size:16px;
+    padding:10px 9px;
     border:1px solid var(--line);
     border-radius:3px;
     background:var(--card);
     color:var(--ink);
+    width:100%;
+    touch-action:manipulation;
+    -webkit-appearance:none;
+    appearance:none;
   }
-  input[type=number]:focus, select:focus{
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235a6570' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 10px center;
+    padding-right:30px;
+  }
+  input[type=number]:focus, input[type=text]:focus, select:focus{
     outline:2px solid var(--blue);
     outline-offset:1px;
   }
@@ -91,11 +128,14 @@
     display:flex;
     align-items:center;
     gap:10px;
+    min-height:44px;
+    cursor:pointer;
+    touch-action:manipulation;
   }
   .toggle{
     position:relative;
     width:52px;
-    height:28px;
+    height:32px;
     flex:0 0 auto;
   }
   .toggle input{opacity:0;width:0;height:0;position:absolute;}
@@ -109,7 +149,7 @@
   .toggle-slider:before{
     content:"";
     position:absolute;
-    width:20px;height:20px;
+    width:24px;height:24px;
     left:4px; top:4px;
     background:#fff;
     border-radius:50%;
@@ -117,7 +157,7 @@
     box-shadow:0 1px 2px rgba(0,0,0,.3);
   }
   .toggle input:checked + .toggle-slider{background:var(--blue);}
-  .toggle input:checked + .toggle-slider:before{transform:translateX(24px);}
+  .toggle input:checked + .toggle-slider:before{transform:translateX(20px);}
   .toggle-label{font-size:0.9rem;font-weight:600;}
   #basementFields{
     display:none;
@@ -130,7 +170,7 @@
   button#calcBtn{
     margin-top:30px;
     width:100%;
-    padding:15px;
+    padding:16px;
     background:var(--blue);
     color:#fff;
     border:none;
@@ -139,9 +179,12 @@
     font-weight:700;
     letter-spacing:0.5px;
     cursor:pointer;
-    transition:background .15s;
+    transition:background .1s;
+    touch-action:manipulation;
+    -webkit-appearance:none;
   }
   button#calcBtn:hover{background:var(--blue-deep);}
+  button#calcBtn:active{background:var(--blue-deep);transform:scale(0.99);}
 
   #results{display:none;margin-top:40px;}
   #results.show{display:block;}
@@ -213,6 +256,12 @@
   }
   td.num, th.num{font-family:var(--mono);}
   .table-wrap{margin-bottom:34px;}
+  .table-scroll{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    border-radius:4px;
+  }
+  table{min-width:560px;}
   .subnote{
     font-size:0.72rem;
     color:var(--ink-soft);
@@ -240,11 +289,11 @@
   <div class="grid">
     <div class="field">
       <label for="plotWidth">Plot / building width <span class="unit">(ft)</span></label>
-      <input type="number" id="plotWidth" value="30" min="0" step="0.5" oninput="updateAreaPreview()">
+      <input type="number" inputmode="decimal" id="plotWidth" value="30" min="0" step="0.5" oninput="updateAreaPreview()">
     </div>
     <div class="field">
       <label for="plotLength">Plot / building length <span class="unit">(ft)</span></label>
-      <input type="number" id="plotLength" value="50" min="0" step="0.5" oninput="updateAreaPreview()">
+      <input type="number" inputmode="decimal" id="plotLength" value="50" min="0" step="0.5" oninput="updateAreaPreview()">
     </div>
     <div class="field">
       <label>Covered area per floor</label>
@@ -252,32 +301,32 @@
     </div>
     <div class="field">
       <label for="floors">Number of floors</label>
-      <input type="number" id="floors" value="2" min="1" step="1">
+      <input type="number" inputmode="decimal" id="floors" value="2" min="1" step="1">
     </div>
     <div class="field">
       <label for="ceilingHeight">Ceiling / floor-to-floor height <span class="unit">(ft)</span></label>
-      <input type="number" id="ceilingHeight" value="10" min="0" step="0.5">
+      <input type="number" inputmode="decimal" id="ceilingHeight" value="10" min="0" step="0.5">
     </div>
     <div class="field">
       <label>&nbsp;</label>
-      <div class="toggle-row">
+      <label class="toggle-row" for="basementToggle">
         <div class="toggle">
           <input type="checkbox" id="basementToggle">
-          <span class="toggle-slider" onclick="document.getElementById('basementToggle').click()"></span>
+          <span class="toggle-slider"></span>
         </div>
         <span class="toggle-label">Basement</span>
-      </div>
+      </label>
     </div>
   </div>
 
   <div class="grid" id="basementFields">
     <div class="field">
       <label for="basementDepth">Basement depth <span class="unit">(ft, floor to ceiling)</span></label>
-      <input type="number" id="basementDepth" value="10" min="0" step="0.5">
+      <input type="number" inputmode="decimal" id="basementDepth" value="10" min="0" step="0.5">
     </div>
     <div class="field">
       <label for="basementWallThk">RCC retaining wall thickness <span class="unit">(inches)</span></label>
-      <input type="number" id="basementWallThk" value="9" min="0" step="0.5">
+      <input type="number" inputmode="decimal" id="basementWallThk" value="9" min="0" step="0.5">
     </div>
   </div>
 
@@ -285,15 +334,15 @@
   <div class="grid">
     <div class="field">
       <label for="numColumns">Number of columns</label>
-      <input type="number" id="numColumns" value="16" min="1" step="1">
+      <input type="number" inputmode="decimal" id="numColumns" value="16" min="1" step="1">
     </div>
     <div class="field">
       <label for="colWidth">Column width <span class="unit">(inches)</span></label>
-      <input type="number" id="colWidth" value="12" min="1" step="0.5">
+      <input type="number" inputmode="decimal" id="colWidth" value="12" min="1" step="0.5">
     </div>
     <div class="field">
       <label for="colDepth">Column depth <span class="unit">(inches)</span></label>
-      <input type="number" id="colDepth" value="18" min="1" step="0.5">
+      <input type="number" inputmode="decimal" id="colDepth" value="18" min="1" step="0.5">
     </div>
     <div class="field">
       <label for="concreteGrade">Concrete grade</label>
@@ -325,15 +374,15 @@
   <div class="grid">
     <div class="field">
       <label for="excavationRate">Digging rate <span class="unit">(Rs / m&sup3; &mdash; excavator + operator + fuel)</span></label>
-      <input type="number" id="excavationRate" value="2000" min="0">
+      <input type="number" inputmode="decimal" id="excavationRate" value="2000" min="0">
     </div>
     <div class="field">
       <label for="disposalRate">Spoil disposal / cartage rate <span class="unit">(Rs / m&sup3; &mdash; loading + trucking + dump fee)</span></label>
-      <input type="number" id="disposalRate" value="900" min="0">
+      <input type="number" inputmode="decimal" id="disposalRate" value="900" min="0">
     </div>
     <div class="field">
       <label for="backfillPct">Excavated soil reused as backfill <span class="unit">(%, reduces spoil hauled away)</span></label>
-      <input type="number" id="backfillPct" value="20" min="0" max="100">
+      <input type="number" inputmode="decimal" id="backfillPct" value="20" min="0" max="100">
     </div>
   </div>
 
@@ -341,51 +390,51 @@
   <div class="grid">
     <div class="field">
       <label for="steelRate">Steel rate <span class="unit">(Rs / kg)</span></label>
-      <input type="number" id="steelRate" value="300" min="0">
+      <input type="number" inputmode="decimal" id="steelRate" value="300" min="0">
     </div>
     <div class="field">
       <label for="concreteRateReady">Concrete rate &ndash; ready-mix <span class="unit">(Rs / m&sup3;)</span></label>
-      <input type="number" id="concreteRateReady" value="32000" min="0">
+      <input type="number" inputmode="decimal" id="concreteRateReady" value="32000" min="0">
     </div>
     <div class="field">
       <label for="concreteRateSite">Concrete rate &ndash; site-mix <span class="unit">(Rs / m&sup3;)</span></label>
-      <input type="number" id="concreteRateSite" value="23000" min="0">
+      <input type="number" inputmode="decimal" id="concreteRateSite" value="23000" min="0">
     </div>
     <div class="field">
       <label for="pccRate">PCC / lean concrete rate <span class="unit">(Rs / m&sup3;)</span></label>
-      <input type="number" id="pccRate" value="17500" min="0">
+      <input type="number" inputmode="decimal" id="pccRate" value="17500" min="0">
     </div>
     <div class="field">
       <label for="brickRate">Brick rate <span class="unit">(Rs / brick)</span></label>
-      <input type="number" id="brickRate" value="18" min="0">
+      <input type="number" inputmode="decimal" id="brickRate" value="18" min="0">
     </div>
     <div class="field">
       <label for="soilTestingCost">Soil testing <span class="unit">(Rs, lump sum)</span></label>
-      <input type="number" id="soilTestingCost" value="50000" min="0">
+      <input type="number" inputmode="decimal" id="soilTestingCost" value="50000" min="0">
     </div>
     <div class="field">
       <label for="plasteringRate">Plastering rate <span class="unit">(Rs / sqft)</span></label>
-      <input type="number" id="plasteringRate" value="55" min="0">
+      <input type="number" inputmode="decimal" id="plasteringRate" value="55" min="0">
     </div>
     <div class="field">
       <label for="electricalRate">Electrical roughing <span class="unit">(Rs / sqft)</span></label>
-      <input type="number" id="electricalRate" value="180" min="0">
+      <input type="number" inputmode="decimal" id="electricalRate" value="180" min="0">
     </div>
     <div class="field">
       <label for="transformerCost">Transformer <span class="unit">(Rs, lump sum)</span></label>
-      <input type="number" id="transformerCost" value="300000" min="0">
+      <input type="number" inputmode="decimal" id="transformerCost" value="300000" min="0">
     </div>
     <div class="field">
       <label for="plumbingRate">Plumbing rate <span class="unit">(Rs / sqft)</span></label>
-      <input type="number" id="plumbingRate" value="150" min="0">
+      <input type="number" inputmode="decimal" id="plumbingRate" value="150" min="0">
     </div>
     <div class="field">
       <label for="finishingRate">Finishing rate <span class="unit">(Rs / sqft)</span></label>
-      <input type="number" id="finishingRate" value="600" min="0">
+      <input type="number" inputmode="decimal" id="finishingRate" value="600" min="0">
     </div>
     <div class="field">
       <label for="laborRate">Labor rate <span class="unit">(Rs / sqft)</span></label>
-      <input type="number" id="laborRate" value="350" min="0">
+      <input type="number" inputmode="decimal" id="laborRate" value="350" min="0">
     </div>
   </div>
 
@@ -405,6 +454,7 @@
     </div>
 
     <div class="table-wrap">
+      <div class="table-scroll">
       <table id="summaryTable">
         <caption>Cost Breakdown by Category</caption>
         <thead>
@@ -413,9 +463,11 @@
         <tbody id="summaryBody"></tbody>
         <tfoot><tr><td colspan="4">Total</td><td class="num" id="summaryTotal"></td></tr></tfoot>
       </table>
+      </div>
     </div>
 
     <div class="table-wrap">
+      <div class="table-scroll">
       <table id="materialsTable">
         <caption>Material Totals &amp; Cost per Sq Ft</caption>
         <thead>
@@ -423,9 +475,11 @@
         </thead>
         <tbody id="materialsBody"></tbody>
       </table>
+      </div>
     </div>
 
     <div class="table-wrap">
+      <div class="table-scroll">
       <table id="entityTable">
         <caption>Structural Element Breakdown (Footing / Column / Beam / Slab / Basement Wall)</caption>
         <thead>
@@ -439,6 +493,7 @@
         </thead>
         <tbody id="entityBody"></tbody>
       </table>
+      </div>
     </div>
 
     <div class="note" id="assumptions"></div>
