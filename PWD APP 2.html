@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Construction Cost Calculator</title>
+<style>
+  :root{
+    --paper:#f2f0ea;
+    --ink:#20262b;
+    --ink-soft:#5a6570;
+    --line:#c7c1b3;
+    --blue:#2c5f7c;
+    --blue-deep:#1c3f52;
+    --amber:#b5651d;
+    --card:#fbfaf6;
+    --grid:#dcd7c9;
+    --mono: 'JetBrains Mono','Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    line-height:1.4;
+  }
+  header{
+    background:var(--blue-deep);
+    color:#eef2f4;
+    padding:22px 28px;
+    border-bottom:4px solid var(--amber);
+  }
+  header h1{
+    margin:0;
+    font-size:1.5rem;
+    letter-spacing:0.5px;
+  }
+  header p{
+    margin:4px 0 0;
+    color:#b9c9d1;
+    font-size:0.85rem;
+  }
+  .wrap{
+    max-width:1100px;
+    margin:0 auto;
+    padding:24px 20px 60px;
+  }
+  .section-title{
+    font-size:0.78rem;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    color:var(--blue-deep);
+    border-bottom:2px solid var(--line);
+    padding-bottom:6px;
+    margin:28px 0 14px;
+  }
+  .section-title:first-child{margin-top:0;}
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(190px,1fr));
+    gap:14px 18px;
+  }
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+  .field label{
+    font-size:0.78rem;
+    color:var(--ink-soft);
+  }
+  .field .unit{
+    font-size:0.7rem;
+    color:#8b8375;
+  }
+  input[type=number], select{
+    font-family:var(--mono);
+    font-size:0.95rem;
+    padding:8px 9px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  input[type=number]:focus, select:focus{
+    outline:2px solid var(--blue);
+    outline-offset:1px;
+  }
+  .toggle-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .toggle{
+    position:relative;
+    width:52px;
+    height:28px;
+    flex:0 0 auto;
+  }
+  .toggle input{opacity:0;width:0;height:0;position:absolute;}
+  .toggle-slider{
+    position:absolute; inset:0;
+    background:#cfc9ba;
+    border-radius:20px;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .toggle-slider:before{
+    content:"";
+    position:absolute;
+    width:20px;height:20px;
+    left:4px; top:4px;
+    background:#fff;
+    border-radius:50%;
+    transition:transform .15s;
+    box-shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+  .toggle input:checked + .toggle-slider{background:var(--blue);}
+  .toggle input:checked + .toggle-slider:before{transform:translateX(24px);}
+  .toggle-label{font-size:0.9rem;font-weight:600;}
+  #basementFields{
+    display:none;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+  }
+  #basementFields.show{display:grid;}
+
+  button#calcBtn{
+    margin-top:30px;
+    width:100%;
+    padding:15px;
+    background:var(--blue);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    font-size:1.05rem;
+    font-weight:700;
+    letter-spacing:0.5px;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  button#calcBtn:hover{background:var(--blue-deep);}
+
+  #results{display:none;margin-top:40px;}
+  #results.show{display:block;}
+
+  .hero{
+    background:var(--blue-deep);
+    color:#fff;
+    border-radius:6px;
+    padding:26px 28px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  .hero .big{
+    font-family:var(--mono);
+    font-size:2.3rem;
+    font-weight:700;
+    color:#f3e4d2;
+  }
+  .hero .label{
+    font-size:0.78rem;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    color:#a9c1cd;
+    margin-bottom:4px;
+  }
+  .hero .sub{
+    text-align:right;
+    font-size:0.85rem;
+    color:#cfd9dd;
+  }
+  .hero .sub b{color:#fff;font-family:var(--mono);}
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:8px;
+    font-size:0.88rem;
+    background:var(--card);
+  }
+  table caption{
+    text-align:left;
+    font-size:0.78rem;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    color:var(--blue-deep);
+    padding-bottom:8px;
+    font-weight:600;
+  }
+  th, td{
+    padding:8px 10px;
+    border-bottom:1px solid var(--grid);
+    text-align:right;
+  }
+  th:first-child, td:first-child{text-align:left;}
+  thead th{
+    background:#e7e2d3;
+    color:var(--ink);
+    font-size:0.75rem;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  tfoot td{
+    font-weight:700;
+    border-top:2px solid var(--ink);
+    border-bottom:none;
+  }
+  td.num, th.num{font-family:var(--mono);}
+  .table-wrap{margin-bottom:34px;}
+  .subnote{
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    font-weight:400;
+  }
+  .note{
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    margin-top:40px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Construction Cost Calculator</h1>
+  <p>RCC framed structure &middot; footing / column / beam / slab breakdown &middot; material &amp; labor quantities (metric, m&sup3;)</p>
+</header>
+
+<div class="wrap">
+
+  <div class="section-title">Building Geometry</div>
+  <div class="grid">
+    <div class="field">
+      <label for="plotWidth">Plot / building width <span class="unit">(ft)</span></label>
+      <input type="number" id="plotWidth" value="30" min="0" step="0.5" oninput="updateAreaPreview()">
+    </div>
+    <div class="field">
+      <label for="plotLength">Plot / building length <span class="unit">(ft)</span></label>
+      <input type="number" id="plotLength" value="50" min="0" step="0.5" oninput="updateAreaPreview()">
+    </div>
+    <div class="field">
+      <label>Covered area per floor</label>
+      <input type="text" id="areaPreview" value="1500 sq ft" disabled style="opacity:0.75;">
+    </div>
+    <div class="field">
+      <label for="floors">Number of floors</label>
+      <input type="number" id="floors" value="2" min="1" step="1">
+    </div>
+    <div class="field">
+      <label for="ceilingHeight">Ceiling / floor-to-floor height <span class="unit">(ft)</span></label>
+      <input type="number" id="ceilingHeight" value="10" min="0" step="0.5">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="toggle-row">
+        <div class="toggle">
+          <input type="checkbox" id="basementToggle">
+          <span class="toggle-slider" onclick="document.getElementById('basementToggle').click()"></span>
+        </div>
+        <span class="toggle-label">Basement</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" id="basementFields">
+    <div class="field">
+      <label for="basementDepth">Basement depth <span class="unit">(ft, floor to ceiling)</span></label>
+      <input type="number" id="basementDepth" value="10" min="0" step="0.5">
+    </div>
+    <div class="field">
+      <label for="basementWallThk">RCC retaining wall thickness <span class="unit">(inches)</span></label>
+      <input type="number" id="basementWallThk" value="9" min="0" step="0.5">
+    </div>
+  </div>
+
+  <div class="section-title">Columns &amp; Reinforcement</div>
+  <div class="grid">
+    <div class="field">
+      <label for="numColumns">Number of columns</label>
+      <input type="number" id="numColumns" value="16" min="1" step="1">
+    </div>
+    <div class="field">
+      <label for="colWidth">Column width <span class="unit">(inches)</span></label>
+      <input type="number" id="colWidth" value="12" min="1" step="0.5">
+    </div>
+    <div class="field">
+      <label for="colDepth">Column depth <span class="unit">(inches)</span></label>
+      <input type="number" id="colDepth" value="18" min="1" step="0.5">
+    </div>
+    <div class="field">
+      <label for="concreteGrade">Concrete grade</label>
+      <select id="concreteGrade">
+        <option>M15</option>
+        <option selected>M20</option>
+        <option>M25</option>
+        <option>M30</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="steelGrade">Steel grade</label>
+      <select id="steelGrade">
+        <option value="415">Fe415</option>
+        <option value="500" selected>Fe500</option>
+        <option value="550">Fe550</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="mixType">Concrete mixing type</label>
+      <select id="mixType">
+        <option value="ready">Ready-mix</option>
+        <option value="site" selected>Site-mix</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section-title">Excavation &amp; Earthwork <span class="subnote">&mdash; a service cost (machinery, fuel, operator, labor), not a purchased material</span></div>
+  <div class="grid">
+    <div class="field">
+      <label for="excavationRate">Digging rate <span class="unit">(Rs / m&sup3; &mdash; excavator + operator + fuel)</span></label>
+      <input type="number" id="excavationRate" value="2000" min="0">
+    </div>
+    <div class="field">
+      <label for="disposalRate">Spoil disposal / cartage rate <span class="unit">(Rs / m&sup3; &mdash; loading + trucking + dump fee)</span></label>
+      <input type="number" id="disposalRate" value="900" min="0">
+    </div>
+    <div class="field">
+      <label for="backfillPct">Excavated soil reused as backfill <span class="unit">(%, reduces spoil hauled away)</span></label>
+      <input type="number" id="backfillPct" value="20" min="0" max="100">
+    </div>
+  </div>
+
+  <div class="section-title">Rates</div>
+  <div class="grid">
+    <div class="field">
+      <label for="steelRate">Steel rate <span class="unit">(Rs / kg)</span></label>
+      <input type="number" id="steelRate" value="300" min="0">
+    </div>
+    <div class="field">
+      <label for="concreteRateReady">Concrete rate &ndash; ready-mix <span class="unit">(Rs / m&sup3;)</span></label>
+      <input type="number" id="concreteRateReady" value="32000" min="0">
+    </div>
+    <div class="field">
+      <label for="concreteRateSite">Concrete rate &ndash; site-mix <span class="unit">(Rs / m&sup3;)</span></label>
+      <input type="number" id="concreteRateSite" value="23000" min="0">
+    </div>
+    <div class="field">
+      <label for="pccRate">PCC / lean concrete rate <span class="unit">(Rs / m&sup3;)</span></label>
+      <input type="number" id="pccRate" value="17500" min="0">
+    </div>
+    <div class="field">
+      <label for="brickRate">Brick rate <span class="unit">(Rs / brick)</span></label>
+      <input type="number" id="brickRate" value="18" min="0">
+    </div>
+    <div class="field">
+      <label for="soilTestingCost">Soil testing <span class="unit">(Rs, lump sum)</span></label>
+      <input type="number" id="soilTestingCost" value="50000" min="0">
+    </div>
+    <div class="field">
+      <label for="plasteringRate">Plastering rate <span class="unit">(Rs / sqft)</span></label>
+      <input type="number" id="plasteringRate" value="55" min="0">
+    </div>
+    <div class="field">
+      <label for="electricalRate">Electrical roughing <span class="unit">(Rs / sqft)</span></label>
+      <input type="number" id="electricalRate" value="180" min="0">
+    </div>
+    <div class="field">
+      <label for="transformerCost">Transformer <span class="unit">(Rs, lump sum)</span></label>
+      <input type="number" id="transformerCost" value="300000" min="0">
+    </div>
+    <div class="field">
+      <label for="plumbingRate">Plumbing rate <span class="unit">(Rs / sqft)</span></label>
+      <input type="number" id="plumbingRate" value="150" min="0">
+    </div>
+    <div class="field">
+      <label for="finishingRate">Finishing rate <span class="unit">(Rs / sqft)</span></label>
+      <input type="number" id="finishingRate" value="600" min="0">
+    </div>
+    <div class="field">
+      <label for="laborRate">Labor rate <span class="unit">(Rs / sqft)</span></label>
+      <input type="number" id="laborRate" value="350" min="0">
+    </div>
+  </div>
+
+  <button id="calcBtn" onclick="calculate()">Calculate Construction Cost</button>
+
+  <div id="results">
+
+    <div class="hero">
+      <div>
+        <div class="label">Total Construction Cost</div>
+        <div class="big" id="heroTotal">Rs 0</div>
+      </div>
+      <div class="sub">
+        Total covered area: <b id="heroArea">0</b> sq ft<br>
+        Cost per sq ft: <b id="heroPerSqft">Rs 0</b>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="summaryTable">
+        <caption>Cost Breakdown by Category</caption>
+        <thead>
+          <tr><th>Item</th><th class="num">Quantity</th><th>Unit</th><th class="num">Rate</th><th class="num">Cost (Rs)</th></tr>
+        </thead>
+        <tbody id="summaryBody"></tbody>
+        <tfoot><tr><td colspan="4">Total</td><td class="num" id="summaryTotal"></td></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="table-wrap">
+      <table id="materialsTable">
+        <caption>Material Totals &amp; Cost per Sq Ft</caption>
+        <thead>
+          <tr><th>Material</th><th class="num">Total Quantity</th><th class="num">Qty per Sq Ft</th><th class="num">Total Cost (Rs)</th><th class="num">Cost per Sq Ft (Rs)</th></tr>
+        </thead>
+        <tbody id="materialsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="table-wrap">
+      <table id="entityTable">
+        <caption>Structural Element Breakdown (Footing / Column / Beam / Slab / Basement Wall)</caption>
+        <thead>
+          <tr>
+            <th>Element</th><th class="num">Qty</th>
+            <th class="num">Concrete / unit (m&sup3;)</th><th class="num">Steel / unit (kg)</th>
+            <th class="num">Cost / unit (Rs)</th>
+            <th class="num">Total Concrete (m&sup3;)</th><th class="num">Total Steel (kg)</th>
+            <th class="num">Total Cost (Rs)</th>
+          </tr>
+        </thead>
+        <tbody id="entityBody"></tbody>
+      </table>
+    </div>
+
+    <div class="note" id="assumptions"></div>
+  </div>
+
+</div>
+
+<script>
+document.getElementById('basementToggle').addEventListener('change', function(){
+  document.getElementById('basementFields').classList.toggle('show', this.checked);
+});
+
+function fmt(n){
+  return Math.round(n).toLocaleString('en-US');
+}
+function fmt2(n){
+  return n.toLocaleString('en-US', {maximumFractionDigits:2});
+}
+function fmt3(n){
+  return n.toLocaleString('en-US', {maximumFractionDigits:3});
+}
+
+function updateAreaPreview(){
+  const w = +document.getElementById('plotWidth').value || 0;
+  const l = +document.getElementById('plotLength').value || 0;
+  document.getElementById('areaPreview').value = fmt2(w*l) + ' sq ft';
+}
+
+const FT3_TO_M3 = 0.0283168; // 1 cubic foot -> cubic metres
+
+function calculate(){
+  // ---- read inputs ----
+  const plotWidth  = +document.getElementById('plotWidth').value || 0;
+  const plotLength = +document.getElementById('plotLength').value || 0;
+  const areaPerFloor   = plotWidth * plotLength;
+  updateAreaPreview();
+  const floors         = +document.getElementById('floors').value || 1;
+  const ceilingHeight  = +document.getElementById('ceilingHeight').value || 0;
+  const hasBasement    = document.getElementById('basementToggle').checked;
+  const basementDepth  = +document.getElementById('basementDepth').value || 0;
+  const basementWallThkFt = (+document.getElementById('basementWallThk').value || 0)/12;
+
+  const numColumns = +document.getElementById('numColumns').value || 1;
+  const colWidthFt = (+document.getElementById('colWidth').value || 0)/12;
+  const colDepthFt = (+document.getElementById('colDepth').value || 0)/12;
+  const steelGradeFactor = 415 / (+document.getElementById('steelGrade').value);
+  const mixType = document.getElementById('mixType').value;
+  const concreteGrade = document.getElementById('concreteGrade').value;
+  const steelGradeLabel = document.getElementById('steelGrade').selectedOptions[0].text;
+
+  const steelRate        = +document.getElementById('steelRate').value || 0;
+  const concreteRateReady= +document.getElementById('concreteRateReady').value || 0; // Rs/m3
+  const concreteRateSite = +document.getElementById('concreteRateSite').value || 0;  // Rs/m3
+  const concreteRate = mixType === 'ready' ? concreteRateReady : concreteRateSite;
+  const pccRate       = +document.getElementById('pccRate').value || 0; // Rs/m3
+  const brickRate     = +document.getElementById('brickRate').value || 0;
+  const excavationRate= +document.getElementById('excavationRate').value || 0; // Rs/m3 digging
+  const disposalRate  = +document.getElementById('disposalRate').value || 0;   // Rs/m3 cartage
+  const backfillPct   = +document.getElementById('backfillPct').value || 0;
+  const soilTestingCost = +document.getElementById('soilTestingCost').value || 0;
+  const plasteringRate= +document.getElementById('plasteringRate').value || 0;
+  const electricalRate= +document.getElementById('electricalRate').value || 0;
+  const transformerCost = +document.getElementById('transformerCost').value || 0;
+  const plumbingRate  = +document.getElementById('plumbingRate').value || 0;
+  const finishingRate = +document.getElementById('finishingRate').value || 0;
+  const laborRate     = +document.getElementById('laborRate').value || 0;
+
+  // ---- engineering assumptions (fixed, shown in footnote) ----
+  const footingThicknessFt = 1.25;
+  const footingPlanMultiplier = 2.5;
+  const pccThicknessFt = 0.25;
+  const slabThicknessFt = 0.417;
+  const beamFactor = 0.12;       // cft of beam concrete per sqft per slab level
+  const wallFactor = 0.55;       // cft of brick masonry per sqft per floor
+  const bricksPerM3 = 500;       // standard thumb rule for 9" brick wall
+  const plasterFactor = 2.5;     // sqft plaster per sqft floor area (both wall faces + soffit)
+  const reinf = { footing:2.3, column:4.5, beam:3.7, slab:2.8, bwall:3.4 }; // kg per cft of concrete, Fe415 base
+  const excavatorOutputM3PerDay = 150; // typical mid-size excavator, informational only
+  const truckCapacityM3 = 6;           // typical tipper truck, informational only
+
+  const verticalLevels = floors + (hasBasement ? 1 : 0);       // total storeys incl. basement
+  const slabLevels      = floors + (hasBasement ? 1 : 0);      // number of slab/beam levels
+  const totalCoveredArea = areaPerFloor * (floors + (hasBasement ? 1 : 0));
+
+  // ---- excavation & earthwork (service cost: machinery + disposal, no material purchase) ----
+  const excavationDepth = hasBasement ? (basementDepth + 2) : 5;
+  const excavationVolumeM3 = areaPerFloor * excavationDepth * FT3_TO_M3;
+  const diggingCost = excavationVolumeM3 * excavationRate;
+  const spoilToDisposeM3 = excavationVolumeM3 * (1 - backfillPct/100);
+  const disposalCost = spoilToDisposeM3 * disposalRate;
+  const excavationTotalCost = diggingCost + disposalCost;
+  const estimatedDays = excavationVolumeM3 / excavatorOutputM3PerDay;
+  const estimatedTruckLoads = spoilToDisposeM3 / truckCapacityM3;
+
+  // ---- PCC / lean concrete ----
+  const pccVolumeM3 = areaPerFloor * pccThicknessFt * FT3_TO_M3;
+  const pccCost = pccVolumeM3 * pccRate;
+
+  // ---- footing ----
+  const footingSideW = colWidthFt * footingPlanMultiplier;
+  const footingSideD = colDepthFt * footingPlanMultiplier;
+  const footingVolPerColFt3 = footingSideW * footingSideD * footingThicknessFt;
+  const footingVolPerCol = footingVolPerColFt3 * FT3_TO_M3;
+  const footingVolTotal = footingVolPerCol * numColumns;
+  const footingSteelPerCol = footingVolPerColFt3 * reinf.footing * steelGradeFactor;
+  const footingSteelTotal = footingSteelPerCol * numColumns;
+
+  // ---- columns ----
+  const columnHeightTotal = ceilingHeight * verticalLevels;
+  const columnVolPerColFt3 = colWidthFt * colDepthFt * columnHeightTotal;
+  const columnVolPerCol = columnVolPerColFt3 * FT3_TO_M3;
+  const columnVolTotal = columnVolPerCol * numColumns;
+  const columnSteelPerCol = columnVolPerColFt3 * reinf.column * steelGradeFactor;
+  const columnSteelTotal = columnSteelPerCol * numColumns;
+
+  // ---- beams ----
+  const beamVolPerLevelFt3 = areaPerFloor * beamFactor;
+  const beamVolPerLevel = beamVolPerLevelFt3 * FT3_TO_M3;
+  const beamVolTotal = beamVolPerLevel * slabLevels;
+  const beamSteelPerLevel = beamVolPerLevelFt3 * reinf.beam * steelGradeFactor;
+  const beamSteelTotal = beamSteelPerLevel * slabLevels;
+
+  // ---- slabs ----
+  const slabVolPerLevelFt3 = areaPerFloor * slabThicknessFt;
+  const slabVolPerLevel = slabVolPerLevelFt3 * FT3_TO_M3;
+  const slabVolTotal = slabVolPerLevel * slabLevels;
+  const slabSteelPerLevel = slabVolPerLevelFt3 * reinf.slab * steelGradeFactor;
+  const slabSteelTotal = slabSteelPerLevel * slabLevels;
+
+  // ---- basement retaining wall ----
+  const perimeter = 2 * (plotWidth + plotLength);
+  let bwallVolFt3 = 0, bwallVol = 0, bwallSteel = 0;
+  if(hasBasement){
+    bwallVolFt3 = perimeter * basementDepth * basementWallThkFt;
+    bwallVol = bwallVolFt3 * FT3_TO_M3;
+    bwallSteel = bwallVolFt3 * reinf.bwall * steelGradeFactor;
+  }
+
+  // ---- brick masonry ----
+  const brickVolTotalFt3 = areaPerFloor * wallFactor * floors;
+  const brickVolTotalM3 = brickVolTotalFt3 * FT3_TO_M3;
+  const brickCount = brickVolTotalM3 * bricksPerM3;
+  const brickCost = brickCount * brickRate;
+
+  // ---- plastering ----
+  const plasterArea = totalCoveredArea * plasterFactor;
+  const plasterCost = plasterArea * plasteringRate;
+
+  // ---- other services ----
+  const electricalCost = totalCoveredArea * electricalRate;
+  const plumbingCost = totalCoveredArea * plumbingRate;
+  const finishingCost = totalCoveredArea * finishingRate;
+  const laborCost = totalCoveredArea * laborRate;
+
+  // ---- totals ----
+  const totalConcreteVol = footingVolTotal + columnVolTotal + beamVolTotal + slabVolTotal + bwallVol;
+  const totalConcreteCost = totalConcreteVol * concreteRate;
+  const totalSteelWeight = footingSteelTotal + columnSteelTotal + beamSteelTotal + slabSteelTotal + bwallSteel;
+  const totalSteelCost = totalSteelWeight * steelRate;
+  const bwallCost = (bwallVol * concreteRate) + (bwallSteel * steelRate);
+
+  const totalCost = soilTestingCost + excavationTotalCost + pccCost + totalConcreteCost + totalSteelCost +
+                     brickCost + plasterCost + electricalCost + transformerCost + plumbingCost +
+                     finishingCost + laborCost;
+
+  // ================= RENDER =================
+  document.getElementById('results').classList.add('show');
+  document.getElementById('heroTotal').textContent = 'Rs ' + fmt(totalCost);
+  document.getElementById('heroArea').textContent = fmt(totalCoveredArea);
+  document.getElementById('heroPerSqft').textContent = 'Rs ' + fmt(totalCost/totalCoveredArea);
+
+  // ---- summary table ----
+  const summaryRows = [
+    ['Soil testing', 1, 'lump sum', soilTestingCost, soilTestingCost],
+    ['Excavation &ndash; digging (machinery)', fmt3(excavationVolumeM3), 'm&sup3;', excavationRate, diggingCost],
+    ['Excavation &ndash; spoil disposal / cartage', fmt3(spoilToDisposeM3), 'm&sup3;', disposalRate, disposalCost],
+    ['PCC / lean concrete', fmt3(pccVolumeM3), 'm&sup3;', pccRate, pccCost],
+    ['RCC concrete (footing+col+beam+slab'+(hasBasement?'+bsmt wall':'')+')', fmt3(totalConcreteVol), 'm&sup3;', concreteRate, totalConcreteCost],
+    ['Steel reinforcement', fmt2(totalSteelWeight), 'kg', steelRate, totalSteelCost],
+    ['Brick / masonry', fmt(brickCount), 'nos', brickRate, brickCost],
+    ['Plastering', fmt2(plasterArea), 'sqft', plasteringRate, plasterCost],
+    ['Electrical roughing', fmt(totalCoveredArea), 'sqft', electricalRate, electricalCost],
+    ['Transformer', 1, 'lump sum', transformerCost, transformerCost],
+    ['Plumbing', fmt(totalCoveredArea), 'sqft', plumbingRate, plumbingCost],
+    ['Finishing', fmt(totalCoveredArea), 'sqft', finishingRate, finishingCost],
+    ['Labor', fmt(totalCoveredArea), 'sqft', laborRate, laborCost],
+  ];
+  document.getElementById('summaryBody').innerHTML = summaryRows.map(r =>
+    `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td>${r[2]}</td><td class="num">${fmt(r[3])}</td><td class="num">${fmt(r[4])}</td></tr>`
+  ).join('');
+  document.getElementById('summaryTotal').textContent = 'Rs ' + fmt(totalCost);
+
+  // ---- materials table ----
+  const matRows = [
+    ['Steel', fmt2(totalSteelWeight)+' kg ('+fmt2(totalSteelWeight/1000)+' t)', fmt2(totalSteelWeight/totalCoveredArea)+' kg', totalSteelCost, totalSteelCost/totalCoveredArea],
+    ['RCC Concrete', fmt3(totalConcreteVol)+' m\u00b3', fmt3(totalConcreteVol/totalCoveredArea)+' m\u00b3', totalConcreteCost, totalConcreteCost/totalCoveredArea],
+    ['PCC / Lean concrete', fmt3(pccVolumeM3)+' m\u00b3', fmt3(pccVolumeM3/totalCoveredArea)+' m\u00b3', pccCost, pccCost/totalCoveredArea],
+    ['Bricks', fmt(brickCount)+' nos', fmt2(brickCount/totalCoveredArea)+' nos', brickCost, brickCost/totalCoveredArea],
+    ['Excavation (dig + dispose)', fmt3(excavationVolumeM3)+' m\u00b3', fmt3(excavationVolumeM3/totalCoveredArea)+' m\u00b3', excavationTotalCost, excavationTotalCost/totalCoveredArea],
+  ];
+  document.getElementById('materialsBody').innerHTML = matRows.map(r =>
+    `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${fmt(r[3])}</td><td class="num">${fmt2(r[4])}</td></tr>`
+  ).join('');
+
+  // ---- entity table ----
+  const footingCostTotal = footingVolTotal*concreteRate + footingSteelTotal*steelRate;
+  const columnCostTotal  = columnVolTotal*concreteRate + columnSteelTotal*steelRate;
+  const beamCostTotal    = beamVolTotal*concreteRate + beamSteelTotal*steelRate;
+  const slabCostTotal    = slabVolTotal*concreteRate + slabSteelTotal*steelRate;
+
+  const footingCostPerUnit = footingVolPerCol*concreteRate + footingSteelPerCol*steelRate;
+  const columnCostPerUnit  = columnVolPerCol*concreteRate + columnSteelPerCol*steelRate;
+  const beamCostPerUnit    = beamVolPerLevel*concreteRate + beamSteelPerLevel*steelRate;
+  const slabCostPerUnit    = slabVolPerLevel*concreteRate + slabSteelPerLevel*steelRate;
+
+  let entityRows = [
+    ['Footing', numColumns, footingVolPerCol, footingSteelPerCol, footingCostPerUnit, footingVolTotal, footingSteelTotal, footingCostTotal],
+    ['Column', numColumns, columnVolPerCol, columnSteelPerCol, columnCostPerUnit, columnVolTotal, columnSteelTotal, columnCostTotal],
+    ['Beam (per level)', slabLevels, beamVolPerLevel, beamSteelPerLevel, beamCostPerUnit, beamVolTotal, beamSteelTotal, beamCostTotal],
+    ['Slab (per level)', slabLevels, slabVolPerLevel, slabSteelPerLevel, slabCostPerUnit, slabVolTotal, slabSteelTotal, slabCostTotal],
+  ];
+  if(hasBasement){
+    entityRows.push(['Basement retaining wall', 1, bwallVol, bwallSteel, bwallCost, bwallVol, bwallSteel, bwallCost]);
+  }
+  document.getElementById('entityBody').innerHTML = entityRows.map(r =>
+    `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${fmt3(r[2])}</td><td class="num">${fmt2(r[3])}</td><td class="num">${fmt(r[4])}</td><td class="num">${fmt3(r[5])}</td><td class="num">${fmt2(r[6])}</td><td class="num">${fmt(r[7])}</td></tr>`
+  ).join('');
+
+  document.getElementById('assumptions').innerHTML =
+    `Assumptions used: footing size = ${footingPlanMultiplier}&times; column dimension, footing thickness ${footingThicknessFt} ft &middot; ` +
+    `PCC thickness ${pccThicknessFt*12}" &middot; slab thickness ${(slabThicknessFt*12).toFixed(1)}" &middot; beam concrete ${beamFactor} cft/sqft/level &middot; ` +
+    `brick wall ${wallFactor} cft/sqft/floor at ${bricksPerM3} bricks/m&sup3; &middot; plaster area = ${plasterFactor}&times; floor area &middot; ` +
+    `reinforcement ratios (kg/cft of concrete, Fe415 base): footing ${reinf.footing}, column ${reinf.column}, beam ${reinf.beam}, slab ${reinf.slab}, basement wall ${reinf.bwall} ` +
+    `&mdash; scaled by 415/grade for ${steelGradeLabel}. Concrete grade selected: ${concreteGrade} (reflected in your rate input). ` +
+    `Excavation: ${backfillPct}% of dug earth assumed reused as backfill (not hauled away). At an indicative excavator output of ${excavatorOutputM3PerDay} m&sup3;/day, this dig is roughly ${estimatedDays.toFixed(1)} machine-days; ` +
+    `spoil disposal is roughly ${estimatedTruckLoads.toFixed(1)} truck loads at ${truckCapacityM3} m&sup3;/truck &mdash; both figures are informational only, not costed separately. ` +
+    `All volumes are shown in cubic metres (m&sup3;); 1 m&sup3; = 35.31 cft. These are standard estimating thumb-rules &mdash; adjust rates/dimensions above to match your actual site conditions and BOQ.`;
+
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+updateAreaPreview();
+calculate();
+</script>
+
+</body>
+</html>
